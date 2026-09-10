@@ -4,14 +4,19 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AgentEvent } from "@earendil-works/pi-agent-core";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { getAuthPath } from "../src/config.ts";
+import { AuthStorage } from "../src/core/auth-storage.ts";
 import { RpcClient } from "../src/modes/rpc/rpc-client.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const authPath = getAuthPath();
+const hasCodexLogin = existsSync(authPath) && AuthStorage.create(authPath).get("openai-codex")?.type === "oauth";
+const model = process.env.PI_RPC_TEST_MODEL ?? "gpt-5.3-codex-spark";
 
 /**
  * RPC mode tests.
  */
-describe.skipIf(!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_OAUTH_TOKEN)("RPC mode", () => {
+describe.skipIf(!hasCodexLogin)("RPC mode", () => {
 	let client: RpcClient;
 	let sessionDir: string;
 
@@ -20,9 +25,10 @@ describe.skipIf(!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_OAUTH_T
 		client = new RpcClient({
 			cliPath: join(__dirname, "..", "dist", "cli.js"),
 			cwd: join(__dirname, ".."),
-			env: { PI_CODING_AGENT_DIR: sessionDir },
-			provider: "anthropic",
-			model: "claude-sonnet-4-5",
+			provider: "openai-codex",
+			model,
+			// Reuse the logged-in auth storage while keeping test sessions temporary.
+			args: ["--session-dir", join(sessionDir, "sessions", "rpc-test")],
 		});
 	});
 
@@ -38,8 +44,8 @@ describe.skipIf(!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_OAUTH_T
 		const state = await client.getState();
 
 		expect(state.model).toBeDefined();
-		expect(state.model?.provider).toBe("anthropic");
-		expect(state.model?.id).toBe("claude-sonnet-4-5");
+		expect(state.model?.provider).toBe("openai-codex");
+		expect(state.model?.id).toBe(model);
 		expect(state.isStreaming).toBe(false);
 		expect(state.messageCount).toBe(0);
 	}, 30000);
