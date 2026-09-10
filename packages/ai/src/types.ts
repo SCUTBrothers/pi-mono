@@ -552,27 +552,56 @@ export interface VercelGatewayRouting {
 
 // Model interface for the unified model system
 export interface Model<TApi extends Api> {
-	id: string;
-	name: string;
-	api: TApi;
-	provider: Provider;
-	baseUrl: string;
-	reasoning: boolean;
 	/**
-	 * Maps pi thinking levels to provider/model-specific values.
-	 * Missing keys use provider defaults. null marks a level as unsupported.
+	 * 模型标识符，例如 "claude-opus-4-6"
 	 */
-	thinkingLevelMap?: ThinkingLevelMap;
-	input: ("text" | "image")[];
+	id: string;
+	/**
+	 * 可读模型名称
+	 */
+	name: string;
+	/**
+	 * 模型提供商，例如 openai, anthropic
+	 */
+	provider: Provider;
+	/**
+	 * max total tokens: input + output
+	 */
+	contextWindow: number;
+	/**
+	 * max output tokens
+	 */
+	maxTokens: number;
+
 	cost: {
 		input: number; // $/million tokens
 		output: number; // $/million tokens
 		cacheRead: number; // $/million tokens
 		cacheWrite: number; // $/million tokens
 	};
-	contextWindow: number;
-	maxTokens: number;
+
+	/**
+	 * 原生 api 类型名称，例如 openai-completions, openai-responses, anthropic-messages
+	 */
+	api: TApi;
+
+	/**
+	 * whether the model produces reasoning tokens
+	 */
+	reasoning: boolean;
+
+	// model adapter options 模型适配器参数配置
+	baseUrl: string;
+	/**
+	 * Maps pi thinking levels to provider/model-specific values.
+	 * Missing keys use provider defaults. null marks a level as unsupported.
+	 */
+	thinkingLevelMap?: ThinkingLevelMap;
+	/** Supported input types. */
+	input: ("text" | "image")[];
+	/** Custom headers for this specific model. */
 	headers?: Record<string, string>;
+	/** Compatibility settings for the selected API. */
 	/** Compatibility overrides for OpenAI-compatible APIs. If not set, auto-detected from baseUrl. */
 	compat?: TApi extends "openai-completions"
 		? OpenAICompletionsCompat

@@ -22,10 +22,20 @@ export type ApiStreamSimpleFunction = (
 
 export interface ApiProvider<TApi extends Api = Api, TOptions extends StreamOptions = StreamOptions> {
 	api: TApi;
+	/**
+	 * streaming implementation for standard native model api
+	 */
 	stream: StreamFunction<TApi, TOptions>;
+	/** Custom streaming implementation for non-standard APIs. */
 	streamSimple: StreamFunction<TApi, SimpleStreamOptions>;
 }
 
+/**
+ * TODO: ApiProviderInternal 和 ApiProvider 除了泛型参数好像没啥区别？
+ *
+ * 但是注册的时候使用 ApiProvider, 获取 provider 的时候，返回 ApiProviderInternal 类型
+ *
+ */
 interface ApiProviderInternal {
 	api: Api;
 	stream: ApiStreamFunction;
@@ -39,6 +49,17 @@ type RegisteredApiProvider = {
 
 const apiProviderRegistry = new Map<string, RegisteredApiProvider>();
 
+/**
+ * 防止使用 api 取出某一个 ApiProvider, 但是调用 stream 的时候，传递了错误的 Model(使用不同的 api)
+ *
+ * think:
+ *
+ * 正常来说，应该是根据 model.api 取出对应的 ApiProvider, 这个时候不会出错。
+ *
+ * stream 函数执行的时候，应该不会校验 model.api, 它已经是对应事先写好的 stream 实现了。
+ *
+ * 只是去获取对应的 model 上的一些配置元信息
+ */
 function wrapStream<TApi extends Api, TOptions extends StreamOptions>(
 	api: TApi,
 	stream: StreamFunction<TApi, TOptions>,
