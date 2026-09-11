@@ -14,6 +14,11 @@ import type {
 
 export { getEnvApiKey } from "./env-api-keys.ts";
 
+/**
+ * find ApiProvider from registry
+ *
+ * @param api native model api identfier. "openai-completions", "anthropic-messages"
+ */
 function resolveApiProvider(api: Api) {
 	const provider = getApiProvider(api);
 	if (!provider) {

@@ -31,9 +31,9 @@ export interface ApiProvider<TApi extends Api = Api, TOptions extends StreamOpti
 }
 
 /**
- * TODO: ApiProviderInternal 和 ApiProvider 除了泛型参数好像没啥区别？
+ * ApiProviderInternal 和 ApiProvider 除了泛型参数没啥区别
  *
- * 但是注册的时候使用 ApiProvider, 获取 provider 的时候，返回 ApiProviderInternal 类型
+ * ApiProvider 表示某一个 api 的具体实现，ApiProviderInternal 表示注册表统一对外提供的接口
  *
  */
 interface ApiProviderInternal {
@@ -50,15 +50,15 @@ type RegisteredApiProvider = {
 const apiProviderRegistry = new Map<string, RegisteredApiProvider>();
 
 /**
- * 防止使用 api 取出某一个 ApiProvider, 但是调用 stream 的时候，传递了错误的 Model(使用不同的 api)
+ * 注册：具体类型，编译时检查
  *
- * think:
+ * -> wrapStream
  *
- * 正常来说，应该是根据 model.api 取出对应的 ApiProvider, 这个时候不会出错。
+ * 存储：统一类型，容纳不同的 provider
  *
- * stream 函数执行的时候，应该不会校验 model.api, 它已经是对应事先写好的 stream 实现了。
+ * -> getApiProvider
  *
- * 只是去获取对应的 model 上的一些配置元信息
+ *  调用：运行时检查 model.api, 再交给具体实现
  */
 function wrapStream<TApi extends Api, TOptions extends StreamOptions>(
 	api: TApi,

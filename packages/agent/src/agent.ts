@@ -321,10 +321,14 @@ export class Agent {
 		this.clearSteeringQueue();
 	}
 
-	/** Start a new prompt from text, a single message, or a batch of messages. */
+	/** Start a new prompt from text, a single message, or a batch of messages.
+	 *
+	 * user input: IDLE state -> PROCESSING
+	 * */
 	async prompt(message: AgentMessage | AgentMessage[]): Promise<void>;
 	async prompt(input: string, images?: ImageContent[]): Promise<void>;
 	async prompt(input: string | AgentMessage | AgentMessage[], images?: ImageContent[]): Promise<void> {
+		// check IDEL state
 		if (this.activeRun) {
 			throw new Error(
 				"Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion.",
@@ -390,7 +394,9 @@ export class Agent {
 		await this.runWithLifecycle(async (signal) => {
 			await runAgentLoop(
 				messages,
+				// session history + system prompt + tools
 				this.createContextSnapshot(),
+				// session loop config
 				this.createLoopConfig(options),
 				(event) => this.processEvents(event),
 				signal,
@@ -449,6 +455,7 @@ export class Agent {
 	}
 
 	private async runWithLifecycle(executor: (signal: AbortSignal) => Promise<void>): Promise<void> {
+		// check IDLE state
 		if (this.activeRun) {
 			throw new Error("Agent is already processing.");
 		}
@@ -469,6 +476,9 @@ export class Agent {
 		} catch (error) {
 			await this.handleRunFailure(error, abortController.signal.aborted);
 		} finally {
+			/**
+			 * natural completion or abort: PROCESSING -> IDLE
+			 */
 			this.finishRun();
 		}
 	}
